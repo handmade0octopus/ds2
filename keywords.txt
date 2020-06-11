@@ -1,0 +1,9 @@
+DS2	KEYWORD1
+writeData	KEYWORD2
+readData	KEYWORD2
+clearRx	KEYWORD2
+checkData	KEYWORD2
+setBlocking	KEYWORD2
+getDevice	KEYWORD2
+setDevice	KEYWORD2
+readCommand	KEYWORD2
