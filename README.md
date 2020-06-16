@@ -1,11 +1,11 @@
-DS2 Library
-
+# DS2 Library
 *	Made to simplyfy the communication between arduino code and ECUs using DS2 k-line protocol ISO 9141.
 	It was made and tested for L9637D but any interface should work the same way. 
 
-*	Look at example and drop 'library' folder into your library location.
+*	Look at [example](example/BasicExample/BasicExample.ino) and drop ['libraries'](example/BasicExample/) folder into your library location.
 
-*	Echo - if you send any command on DS2 it responds with whatever was send due to way K-line is like contructed.
+## Protocol DS2
+*	Echo - if you send any command on DS2 it responds with whatever was send due to way K-line is like constructed.
 *	Imagine K-line being a single guitar string and our TX is making it vibrate and our RX is constantly picking up this vibrations. This is echo
 	
 *	1st byte in command/response is device which should receive command or which send the command
@@ -19,21 +19,21 @@ DS2 Library
 
 *	Last byte is always XOR checksum. You can use this calculator to get it: https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
 
-*	Some commands for DS2 for BMW:
-	ECU id - {0x12, 0x04, 0x00, 0x16}
-	General values - {0x12, 0x05, 0x0B, 0x03, 0x1F}
+*	Some commands for DS2 for BMW including MS41 / MS41.1 / MS41.2 / MS41.3 / MS42 / MS43:
+	-	ECU id - {0x12, 0x04, 0x00, 0x16}
+	-	General values - {0x12, 0x05, 0x0B, 0x03, 0x1F}
 	
 	
-Copyright 2020 - Made by sorek.uk
+> #### Copyright 2020 - Made by sorek.uk
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-and associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+> and associated documentation files (the "Software"), to deal in the Software without restriction,
+> including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+> subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+> WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
