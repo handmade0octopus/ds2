@@ -6,6 +6,11 @@
 #include "TFT_eSPI.h"
 TFT_eSPI tft = TFT_eSPI();
 
+#include <ESP32CAN.h>
+#include <CAN_config.h>
+
+CAN_device_t CAN_cfg;
+
 // We keep data there, 255 is reccomended for full compatibility, you can use void setMaxDataLength(uint8_t dataLength) if bugs happen
 uint8_t data[255];
 
@@ -97,11 +102,23 @@ void setup() {
 	
 	pinMode(TFT_TOUCH_PIN, INPUT);
 	
+	CAN_cfg.speed=CAN_SPEED_500KBPS;
+    CAN_cfg.tx_pin_id = GPIO_NUM_5;
+    CAN_cfg.rx_pin_id = GPIO_NUM_4;
+    /* create a queue for CAN receiving */
+    CAN_cfg.rx_queue = xQueueCreate(10,sizeof(CAN_frame_t));
+    //initialize CAN Module
+    ESP32Can.CANInit();
+	
+	tft.setCursor(0,0);
+	tft.println("CAN");
+	
 	// You can set blocking if you want to test how it works.
 //	DS2.setBlocking(true);
 
 
 	// Loading and displaying ECU ID
+	/*
 	char loading[][3] = {"|", "/", "-", "\\"};
 	tft.println(F("CONNECTING"));
 	for(uint8_t i = 0; !DS2.obtainValues(ecuId, data); i++) {
@@ -122,29 +139,44 @@ void setup() {
 	
 	// Matching battery voltage offset depending on our ECU
 	batteryOffset = matchEcu(ecuIdString);
+	*/
 }
 
 // Loop variables
 uint32_t startTime;
 float fps, lowestFps = 0, highestFps = 0;
+float hz, lowestHz = 0, highestHz = 0;
 boolean print = false;
-
+uint32_t canTimestamp = 0;
+boolean gotCan = false;
+CAN_frame_t rx_frame;
 void loop(void) {
 	startTime = micros();
 	
 	// You can compare performance using two types of commands
 	
 	// Send command
-	if(DS2.sendCommand(generalValues) != 0) // do stuff if data sent
+//	if(DS2.sendCommand(generalValues) != 0) // do stuff if data sent
 	
 	/**
 	* You can put some code in between while waiting for data for higher performance
 	**/
-	if(print) printData(generalValues);
-
+//	if(print) printData(generalValues);
+	
+	
+	if(xQueueReceive(CAN_cfg.rx_queue,&rx_frame, 3*portTICK_PERIOD_MS)==pdTRUE){
+		tft.setCursor(0,9);
+		uint16_t val;
+		((uint8_t *)&val)[0] = rx_frame.data.u8[0];
+		((uint8_t *)&val)[1] = rx_frame.data.u8[1];
+		float batteryVoltage = 0.1015625*val;
+		tft.print(batteryVoltage);
+		tft.println(F(" V  "));
+		gotCan = true;
+	}
 	
 	// Receive command
-	if((DS2.receiveData(data)) == RECEIVE_OK) print = true; // do stuff if data received
+//	if((DS2.receiveData(data)) == RECEIVE_OK) print = true; // do stuff if data received
 	
 	// Blocked .obtainValues - generally slower but easier to use and always laids some response
 //	if(DS2.obtainValues(generalValues, data)) print = true;
@@ -192,11 +224,30 @@ void printFps() {
 	if(digitalRead(TFT_TOUCH_PIN) == 0) {
 		lowestFps = 0;
 		highestFps = 0;
+		lowestHz = 0;
+		highestHz = 0;
 	}
-	tft.setCursor(0, 210);
+	
+	if(gotCan) {
+		hz = 1000000.0/(micros() - canTimestamp);
+		gotCan = false;
+		canTimestamp = micros();
+	}
 	fps = 1000000.0/(micros() - startTime);
 	if(lowestFps == 0 || lowestFps > fps) lowestFps = fps;
 	if(highestFps == 0 || highestFps < fps) highestFps = fps;
+	if(lowestHz == 0 || lowestHz > hz) lowestHz = hz;
+	if(highestHz == 0 || highestHz < hz) highestHz = hz;
+	
+	tft.setCursor(0, 30);
+	tft.print(lowestHz);
+	tft.println(F(" Hz Low    "));
+	tft.print(hz);
+	tft.println(F(" Hz     "));
+	tft.print(highestHz);
+	tft.println(F(" Hz High    "));
+	
+	tft.setCursor(0, 210);
 	tft.print(lowestFps);
 	tft.println(F(" fps Low    "));
 	tft.print(fps);

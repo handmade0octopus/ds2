@@ -1,10 +1,21 @@
 #include "DS2.h"
-
 // Go to libraries and paste libraries folder from this example folder
 // You can use also Adafruit library although its slower but it supports more screens - code is 100% compatible with it though!
 #include "SPI.h"
 #include "TFT_eSPI.h"
 TFT_eSPI tft = TFT_eSPI();
+
+// SD card library and pins
+#include "SD.h"
+
+#define SD_CS 15
+#define SD_SCK 14
+#define SD_MISO 27
+#define SD_MOSI 13
+
+#if defined ESP32_CUSTOM
+	SPIClass SDSPI(HSPI);
+#endif
 
 // We keep data there, 255 is reccomended for full compatibility, you can use void setMaxDataLength(uint8_t dataLength) if bugs happen
 uint8_t data[255];
@@ -95,6 +106,10 @@ void setup() {
 		while(!Serial);
 	#endif
 	
+	#if defined ESP32_CUSTOM
+		SDSPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+	#endif
+	
 	pinMode(TFT_TOUCH_PIN, INPUT);
 	
 	// You can set blocking if you want to test how it works.
@@ -128,6 +143,7 @@ void setup() {
 uint32_t startTime;
 float fps, lowestFps = 0, highestFps = 0;
 boolean print = false;
+float batteryVoltage;
 
 void loop(void) {
 	startTime = micros();
@@ -140,7 +156,10 @@ void loop(void) {
 	/**
 	* You can put some code in between while waiting for data for higher performance
 	**/
-	if(print) printData(generalValues);
+	if(print) {
+		printData(generalValues);
+		handleSDCard();
+	}
 
 	
 	// Receive command
@@ -155,7 +174,7 @@ void loop(void) {
 // Prints data, gets batteryVoltage from data, you need to specify which command was sent
 void printData(uint8_t command[]) {
 	tft.setCursor(0,9);
-	float batteryVoltage = 0.1*DS2.getByte(data, batteryOffset);
+	batteryVoltage = 0.1*DS2.getByte(data, batteryOffset);
 	tft.print(batteryVoltage);
 	tft.println(F(" V  "));
 	
@@ -170,6 +189,60 @@ void printData(uint8_t command[]) {
 
 	printRps(DS2.getRespondsPerSecond());
 	print = false;
+}
+
+// Handling SD card event
+String path = "/log01.csv";
+uint8_t fileNumber = 1;
+boolean sdReady = false;
+boolean fileReady = false;
+boolean toggleLog = false;
+uint32_t lastcheck;
+File file;
+boolean handleSDCard() {
+	if(!sdReady) {
+		if(millis() < lastcheck + 1000L) return false;
+		lastcheck = millis();
+		if(SD.begin(SD_CS, SDSPI)) sdReady = true;
+		else sdReady = false;
+	} else {
+		sdReady = true;
+		if(fileReady) {
+			logToFile(file);
+			if(toggleLog) {
+				file.close();
+				fileReady = false;
+				toggleLog = false;
+			}
+		} else if(toggleLog) {
+			file = SD.open(path.c_str());
+			while(file) {
+				String fileNumberName = String(++fileNumber);
+				path = path.substring(0, path.indexOf(".csv")-fileNumberName.length());
+				path = path + fileNumberName + ".csv";
+				file = SD.open(path.c_str());
+			}
+			if(!(file = SD.open(path.c_str(), FILE_WRITE))) return false;
+			file.println("Timestamp, Voltage, Rps, Fps");
+			fileReady = true;
+			toggleLog = false;
+		}
+	}
+	
+
+	tft.setCursor(200, 0);
+	tft.println(sdReady ? "SD Ready" : "SD Fail");
+	tft.setCursor(200, 9);
+	tft.println(fileReady ? "Logging" : "No logging");
+	tft.setCursor(200, 18);
+	tft.println(path);
+	return sdReady && fileReady;
+}
+
+void logToFile(File toWrite) {
+	String logRow = String(millis()) + "," + String(batteryVoltage) 
+					+ "," + String(DS2.getRespondsPerSecond()) + "," + String(fps);
+	file.println(logRow);
 }
 
 // Very slow way of printing message, good for debugging though
@@ -188,10 +261,14 @@ void printRps(float rps) {
 }
 
 // Prints Fps on the screen with low, high and current. If touch pressed min/max fps are resetted
-void printFps() {
+uint32_t lastEvent;
+float printFps() {
 	if(digitalRead(TFT_TOUCH_PIN) == 0) {
+		if(millis() < lastEvent + 1000L) return 0; // debounce
+		lastEvent = millis();
 		lowestFps = 0;
 		highestFps = 0;
+		toggleLog = true;
 	}
 	tft.setCursor(0, 210);
 	fps = 1000000.0/(micros() - startTime);
@@ -203,6 +280,6 @@ void printFps() {
 	tft.println(F(" fps Current     "));
 	tft.print(highestFps);
 	tft.println(F(" fps High    "));
+	return fps;
 }
-
 
