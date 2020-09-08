@@ -5,6 +5,8 @@
 *	Look at [example](example/BasicExample/BasicExample.ino) and drop ['libraries'](example/BasicExample/) folder into your library location.
 
 *	More info about the project on [RomRaider Forum](https://www.romraider.com/forum/viewtopic.php?f=58&t=17030) <==
+*	and [MS4X.net wiki](https://www.ms4x.net/index.php?title=Logger.S) <==
+
 
 ## Protocol DS2
 *	Echo - if you send any command on DS2 it responds with whatever was send due to way K-line is like constructed.
