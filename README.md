@@ -4,6 +4,8 @@
 
 *	Look at [example](example/BasicExample/BasicExample.ino) and drop ['libraries'](example/BasicExample/) folder into your library location.
 
+*	More info about the project on [RomRaider Forum](https://www.romraider.com/forum/viewtopic.php?f=58&t=17030) <==
+
 ## Protocol DS2
 *	Echo - if you send any command on DS2 it responds with whatever was send due to way K-line is like constructed.
 *	Imagine K-line being a single guitar string and our TX is making it vibrate and our RX is constantly picking up this vibrations. This is echo
