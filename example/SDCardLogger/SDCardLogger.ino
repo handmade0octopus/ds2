@@ -1,3 +1,4 @@
+#define ESP32_CUSTOM
 #include "DS2.h"
 // Go to libraries and paste libraries folder from this example folder
 // You can use also Adafruit library although its slower but it supports more screens - code is 100% compatible with it though!
@@ -7,6 +8,10 @@ TFT_eSPI tft = TFT_eSPI();
 
 // SD card library and pins
 #include "SD.h"
+
+// SD car update feature
+#include <Update.h>
+#define UPDATE_FILE "/update.bin"
 
 #define SD_CS 15
 #define SD_SCK 14
@@ -108,6 +113,7 @@ void setup() {
 	
 	#if defined ESP32_CUSTOM
 		SDSPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+		SD.begin(SD_CS, SDSPI);
 	#endif
 	
 	pinMode(TFT_TOUCH_PIN, INPUT);
@@ -283,3 +289,22 @@ float printFps() {
 	return fps;
 }
 
+void updateFirmware() {
+	File updateFile = SD.open(UPDATE_FILE);
+	if (updateFile == NULL || updateFile.isDirectory()) {
+		return;
+	}
+	
+	size_t updateSize = updateFile.size();
+	
+	if(Update.begin(updateSize)) {
+		if(Update.writeStream(updateFile) == updateSize) {
+			if(Update.end() && Update.isFinished()) {
+				updateFile.close();
+				SD.remove(UPDATE_FILE);
+				delay(3000);
+				ESP.restart();
+			}
+		}
+	}
+}
