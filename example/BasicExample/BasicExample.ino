@@ -3,6 +3,7 @@
 // Go to libraries and paste libraries folder from this example folder
 // You can use also Adafruit library although its slower but it supports more screens - code is 100% compatible with it though!
 #include "SPI.h"
+#include "SPIFFS.h"
 #include "TFT_eSPI.h"
 TFT_eSPI tft = TFT_eSPI();
 
@@ -13,6 +14,9 @@ uint8_t data[255];
 uint8_t ecuId[] = {0x12, 0x04, 0x00, 0x16};
 uint8_t generalValues[] = {0x12, 0x05, 0x0B, 0x03, 0x1F};
 
+// Change to true if you want to calibrate LCD again
+#define REPEAT_CAL false
+#define CALIBRATION_FILE "/TouchCalData1"
 
 // We store our ECU list and byte offset for our battery voltage
 struct Ecu {
@@ -96,6 +100,8 @@ void setup() {
 	#endif
 	
 	pinMode(TFT_TOUCH_PIN, INPUT);
+	
+	touchCalibrate();
 	
 	// You can set blocking if you want to test how it works.
 //	DS2.setBlocking(true);
@@ -206,3 +212,60 @@ void printFps() {
 }
 
 
+void touchCalibrate() {
+	uint16_t calData[5];
+	uint8_t calDataOK = 0;
+
+	// check if calibration file exists and size is correct
+	if (SPIFFS.exists(CALIBRATION_FILE)) {
+		if (REPEAT_CAL)
+		{
+			// Delete if we want to re-calibrate
+			SPIFFS.remove(CALIBRATION_FILE);
+		}
+		else
+		{
+			File f = SPIFFS.open(CALIBRATION_FILE, "r");
+			if (f) {
+				if (f.readBytes((char *)calData, 14) == 14)
+					calDataOK = 1;
+				f.close();
+			}
+		}
+	}
+
+	if (calDataOK && !REPEAT_CAL) {
+		// calibration data valid
+		tft.setTouch(calData);
+	} else {
+		// data not valid so recalibrate
+		tft.fillScreen(TFT_BLACK);
+		tft.setCursor(20, 0);
+		tft.setTextFont(2);
+		tft.setTextSize(1);
+		tft.setTextColor(TFT_WHITE, TFT_BLACK);
+
+		tft.println("Touch corners as indicated");
+
+		tft.setTextFont(1);
+		tft.println();
+
+		if (REPEAT_CAL) {
+			tft.setTextColor(TFT_RED, TFT_BLACK);
+			tft.println("Set REPEAT_CAL to false to stop this running again!");
+		}
+
+		tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
+
+		tft.setTextColor(TFT_GREEN, TFT_BLACK);
+		tft.println("Calibration complete!");
+
+		// store data
+		File f = SPIFFS.open(CALIBRATION_FILE, "w");
+		if (f) {
+			f.write((const unsigned char *)calData, 14);
+			f.close();
+		}
+		tft.setTextColor(TFT_WHITE, TFT_BLACK);
+	}
+}
