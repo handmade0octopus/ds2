@@ -14,6 +14,9 @@ CAN_device_t CAN_cfg;
 // SD card library and pins
 #include "SD.h"
 
+#include <BluetoothSerial.h>
+BluetoothSerial SerialBT;
+
 // SD car update feature
 #include <Update.h>
 #define UPDATE_FILE "/update.bin"
@@ -53,6 +56,8 @@ void setup() {
 	digitalWrite(12, HIGH);
 	
 	Serial.begin(115200);
+	
+	SerialBT.begin("CAN Reader");	
 		
 	Serial2.begin(9600, SERIAL_8E1);
 	Serial2.setTimeout(ISO_TIMEOUT);
@@ -102,42 +107,8 @@ uint8_t maxCanSender = 0;
 void loop(void) {
 	startTime = micros();
 	
-	if(Serial.peek() == 'S') {
-		char* end;
-		uint16_t newCanSender[CAN_FUNC]; 
-		String read = Serial.readString();
-		String sub = read.substring(1);
-		
-		for(uint8_t i = 0; i < CAN_FUNC; i++) {
-			newCanSender[i] = 0;
-		}
-		
-		for(uint8_t i = 0; i < CAN_FUNC; i++) {
-			int subIndex = sub.indexOf(",");
-			if(subIndex == -1) {
-				newCanSender[i] = (uint16_t) strtoull((char*) sub.c_str(), &end, 0);
-				break;
-			} else {
-				newCanSender[i] = (uint16_t) strtoull((char*) sub.substring(0, subIndex).c_str(), &end, 0);
-				sub = sub.substring(subIndex + 1);
-			}	
-		}
-		
-		boolean newSender = true;
-		for(uint8_t i = 0; i < maxCanSender && i < MAX_CAN_SEND; i++) {
-			if(canSender[i][1] == newCanSender[1]) {
-				newSender = false;
-				currentCanSender = i;
-				break;
-			}
-		}
-		if(newSender) currentCanSender = maxCanSender++;
-		for(uint8_t i = 0; i < CAN_FUNC; i++) {
-			canSender[currentCanSender][i] = newCanSender[i];
-		}
-		Serial.print("Sent: ");
-		Serial.println(read);
-	} else if(Serial.available()) Serial.read();
+	if(Serial.available()) readSerial(Serial);
+	else if(SerialBT.available()) readSerial(SerialBT);
 	
 	
 	if(xQueueReceive(CAN_cfg.rx_queue,&rx_frame, 3*portTICK_PERIOD_MS)==pdTRUE){
@@ -173,6 +144,72 @@ void loop(void) {
 	if(gotCan) printCan();
 	
 	printFps();
+}
+
+void readSerial(Stream &ser) {
+	if(ser.peek() == 'S') {
+		char* end;
+		uint16_t newCanSender[CAN_FUNC]; 
+		String read = ser.readString();
+		String sub = read.substring(1);
+		
+		for(uint8_t i = 0; i < CAN_FUNC; i++) {
+			newCanSender[i] = 0;
+		}
+		
+		for(uint8_t i = 0; i < CAN_FUNC; i++) {
+			int subIndex = sub.indexOf(",");
+			if(subIndex == -1) {
+				newCanSender[i] = (uint16_t) strtoull((char*) sub.c_str(), &end, 0);
+				break;
+			} else {
+				newCanSender[i] = (uint16_t) strtoull((char*) sub.substring(0, subIndex).c_str(), &end, 0);
+				sub = sub.substring(subIndex + 1);
+			}	
+		}
+		
+		boolean newSender = true;
+		for(uint8_t i = 0; i < maxCanSender && i < MAX_CAN_SEND; i++) {
+			if(canSender[i][1] == newCanSender[1]) {
+				newSender = false;
+				currentCanSender = i;
+				break;
+			}
+		}
+		if(newSender) currentCanSender = maxCanSender++;
+		for(uint8_t i = 0; i < CAN_FUNC; i++) {
+			canSender[currentCanSender][i] = newCanSender[i];
+		}
+		ser.print("Sent: ");
+		ser.println(read);
+	} else if(ser.peek() == 'C') {
+		ESP32Can.CANStop();
+		
+		char* end;
+		String read = ser.readString();
+		read = read.substring(1);
+		uint16_t canSpeed = (uint16_t) strtoull((char*) read.c_str(), &end, 0);
+		
+		switch(canSpeed) {
+			case 100:
+				CAN_cfg.speed=CAN_SPEED_100KBPS;
+				break;
+			case 125:
+				CAN_cfg.speed=CAN_SPEED_125KBPS;
+				break;
+			case 250:
+				CAN_cfg.speed=CAN_SPEED_250KBPS;
+				break;
+			case 500:
+				CAN_cfg.speed=CAN_SPEED_500KBPS;
+				break;
+			case 800:
+				CAN_cfg.speed=CAN_SPEED_800KBPS;
+				break;
+			default: CAN_cfg.speed=CAN_SPEED_1000KBPS;
+		}
+		ESP32Can.CANInit();
+	} else if(ser.available()) ser.read();
 }
 
 void sendCan() {
