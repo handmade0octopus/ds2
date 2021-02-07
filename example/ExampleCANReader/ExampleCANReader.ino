@@ -238,15 +238,30 @@ void printCan() {
 	}
 	tft.setCursor(0, offset);
 	tft.print("ID: 0x");
-	if(canList[currentCan][0] < 0x10) tft.print("0");	
-	if(canList[currentCan][0] < 0x100) tft.print("0");	
+	Serial.print("ID: 0x");
+	if(canList[currentCan][0] < 0x10) {
+		tft.print("0");	
+		Serial.print("0");	
+	}
+	if(canList[currentCan][0] < 0x100) {
+		tft.print("0");	
+		Serial.print("0");	
+	}
 	tft.print(canList[currentCan][0], HEX);
-	tft.print(" Data: ");
+	Serial.print(canList[currentCan][0], HEX);
+	tft.print(" Data:");
+	Serial.print(" Data:");
 	for(uint8_t i = 0; i < canList[currentCan][9]; i++) {
 		tft.print(" ");
-		if(canList[currentCan][i+1] < 16) tft.print("0");
+		Serial.print(" ");
+		if(canList[currentCan][i+1] < 16) {
+			tft.print("0");
+			Serial.print("0");
+		}
 		tft.print(canList[currentCan][i+1], HEX);
+		Serial.print(canList[currentCan][i+1], HEX);
 	}
+	Serial.println(" ");
 }
 
 void updateFirmware() {

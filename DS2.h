@@ -57,7 +57,7 @@ v1.0: INITIAL RELEASE
 **/
 // Default timeout for message
 #ifndef ISO_TIMEOUT
-#define ISO_TIMEOUT 160 // I found out on breadboard 160
+#define ISO_TIMEOUT 200
 #endif
 
 // Default max data length
@@ -102,20 +102,18 @@ class DS2 {
 		uint8_t setDevice(uint8_t dev);
 		
 		// Data handling - use those commands to get and check data (data is automatically check when read but you can use command to check it
-		uint8_t writeData(uint8_t data[]); // sets device to first byte value; sets echo to second byte value
-		uint8_t writeData(uint8_t data[], uint8_t length);
+		uint8_t writeData(uint8_t data[], uint8_t length = 0); // sets device to first byte value; sets echo to second byte value
 		boolean readCommand(uint8_t data[]); // sets echo to 0 so you can use readData and it will read data without echo after calling this command
 		boolean readData(uint8_t data[]); // reads command and checks data
 		boolean checkData(uint8_t data[]); // just use setEcho to 0 if want to check only response or command otherwise it will check whole data (echo + response) for checksum
 		uint8_t available();
 		void flush();
 		
-		boolean obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen); // automated forced blocking one-liner to get data quickly
-		boolean obtainValues(uint8_t command[], uint8_t data[]); // automatic responseLength recognition (might be slower)
+		boolean obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen = 0); // automated forced blocking one-liner to get data quickly; respLen == 0 - automatic responseLength recognition (might be slower)
 		
 		// Non blocking if set; those two below are great to use at the beggining and end of loops to get data/gui/touch processing while we wait for command
-		uint8_t sendCommand(uint8_t command[], uint8_t respLen); // sends command - if already send and no response it won't send it again (safe to use in loop); returns number of bytes send
-		uint8_t sendCommand(uint8_t command[]); // same but without respLength (auto learning - might be slower if commands change often)
+		uint8_t sendCommand(uint8_t command[], uint8_t respLen = 0);	// sends command - if already send and no response it won't send it again (safe to use in loop); returns number of bytes send
+																		// if default 0 - same but without respLength (auto learning - might be slower if commands change often)
 		uint8_t receiveData(uint8_t data[]); // use at end of loop if we want to do other stuff while we wait for command. Can be blocking or non blocking; returns receive flags
 		void newCommand(); // use to force new command - clear RX buffer and allow to send new command
 		boolean compareCommands(uint8_t compA[], uint8_t compB[]); // we can use it to easily check if the messages are the same or not
@@ -126,14 +124,17 @@ class DS2 {
 		//	otherwise it should get echo from message automatically
 		uint8_t getByte(uint8_t data[], uint8_t offset);
 		uint16_t getInt(uint8_t data[], uint8_t offset);
-		uint8_t getString(uint8_t data[], char string[], uint8_t offset, uint8_t length); // returns string length
-		uint8_t getString(uint8_t data[], char string[], uint8_t offset);	// returns string length
+		uint8_t getString(uint8_t data[], char string[], uint8_t offset, uint8_t length = 255); // returns string length
 		void clearData(uint8_t data[]); // Fast way to clear data if needed
 		
 		// You can get response and echo lengths from commands below
 		uint8_t getResponseLength();
 		uint8_t getEcho();
 		uint8_t setEcho(uint8_t echo);
+		
+		// KWP protocol handling
+		boolean setKwp(boolean kwpSet) { return (kwp = kwpSet); };
+		boolean getKwp() { return kwp; };
 		
 		
 		// Get commands per second calculated from write command followed by readData
@@ -145,6 +146,7 @@ class DS2 {
 	
 		Stream &serial;
 	private:
+		boolean kwp = false;
 		boolean blocking = false;
 		boolean messageSend = false;
 		uint8_t device = 0;
