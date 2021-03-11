@@ -220,7 +220,11 @@ boolean DS2::checkData(uint8_t data[]) {
 }
 
 boolean DS2::checkDataOk(uint8_t data[]) {
-	if(kwp || !ackByteCheck || data[echoLength+ackByteOffset] == ackByte) return true;
+	if(kwp) {
+		if(data[echoLength + 2] == device) return true;
+		else return false;
+	}
+	if(!ackByteCheck || data[echoLength+ackByteOffset] == ackByte) return true;
 	else return false;
 }
 
