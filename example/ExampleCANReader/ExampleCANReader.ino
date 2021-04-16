@@ -1,3 +1,4 @@
+#define ESP32_CUSTOM
 #include "DS2.h"
 
 // Go to libraries and paste libraries folder from this example folder

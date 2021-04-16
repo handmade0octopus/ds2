@@ -23,7 +23,7 @@
 
 
 // Ucomment if using ESP32 instead of arduino
-//#define ESP32_CUSTOM
+#define ESP32_CUSTOM
 #if defined ESP32_CUSTOM
 		#include <User_Setups/User_Setup.ESP32.h>
 	#else
