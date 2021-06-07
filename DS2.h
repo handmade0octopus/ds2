@@ -124,6 +124,7 @@ class DS2 {
 		//	otherwise it should get echo from message automatically
 		uint8_t getByte(uint8_t data[], uint8_t offset);
 		uint16_t getInt(uint8_t data[], uint8_t offset);
+		uint64_t getUint64(uint8_t data[], uint8_t offset, boolean reverseEndianess, uint8_t length);
 		uint8_t getString(uint8_t data[], char string[], uint8_t offset, uint8_t length = 255); // returns string length
 		void clearData(uint8_t data[]); // Fast way to clear data if needed
 		
@@ -136,6 +137,12 @@ class DS2 {
 		boolean setKwp(boolean kwpSet) { return (kwp = kwpSet); };
 		boolean getKwp() { return kwp; };
 		
+		// Some ECUs like DDE4 need delay between bytes sent
+		boolean setSlowSend(boolean setS, uint8_t delay = 3) { 
+			slowSend = delay;
+			return (slow = setS);
+			};
+		
 		
 		// Get commands per second calculated from write command followed by readData
 		float getRespondsPerSecond();
@@ -147,8 +154,11 @@ class DS2 {
 		Stream &serial;
 	private:
 		boolean kwp = false;
+		boolean slow = false;
 		boolean blocking = false;
 		boolean messageSend = false;
+		
+		uint8_t slowSend = 4;
 		uint8_t device = 0;
 		uint8_t echoLength = 0, responseLength, maxDataLength = MAX_DATA_LENGTH;
 		
@@ -161,6 +171,8 @@ class DS2 {
 		
 		volatile uint32_t timeStamp;
 		float commandsPerSecond;
+		
+		uint8_t writeToSerial(uint8_t data[], uint8_t length);
 };
 
 #endif

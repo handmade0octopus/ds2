@@ -112,8 +112,17 @@ uint8_t DS2::writeData(uint8_t data[], uint8_t length) {
 	}
 	if(length != 0) {
 		responseLength = length;
-		return serial.write(data, length);
-	} else return serial.write(data, echoLength);
+		return writeToSerial(data, length);
+	} else return writeToSerial(data, echoLength);
+}
+
+uint8_t DS2::writeToSerial(uint8_t data[], uint8_t length) {
+	if(!slow) return serial.write(data, length);
+	for(uint8_t i = 0; i < length; i++) {
+		delay(slowSend);
+		serial.write(data[i]);
+	}
+	return length;
 }
 
 boolean DS2::readCommand(uint8_t data[]) {
@@ -313,6 +322,16 @@ uint16_t DS2::getInt(uint8_t data[], uint8_t offset){
 	uint8_t dataPoint = echoLength + offset + (kwp ? 4 : 3);
 	((uint8_t *)&result)[1] = data[dataPoint++];
 	((uint8_t *)&result)[0] = data[dataPoint];
+	return result;
+}
+
+uint64_t DS2::getUint64(uint8_t data[], uint8_t offset, boolean reverseEndianess = false, uint8_t length = 8) {
+	uint64_t result = 0;
+	uint8_t dataPoint = echoLength + offset + (kwp ? 4 : 3);
+	for(uint8_t i = 0; i < length && i < 8; i++) {
+		if(reverseEndianess) ((uint8_t *)&result)[i] = data[dataPoint+i];
+		else ((uint8_t *)&result)[length-1-i] = data[dataPoint+i];
+	}
 	return result;
 }
 	
