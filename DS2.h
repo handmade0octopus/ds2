@@ -57,7 +57,7 @@ v1.0: INITIAL RELEASE
 **/
 // Default timeout for message
 #ifndef ISO_TIMEOUT
-#define ISO_TIMEOUT 200
+#define ISO_TIMEOUT 250
 #endif
 
 // Default max data length
@@ -126,6 +126,7 @@ class DS2 {
 		uint16_t getInt(uint8_t data[], uint8_t offset);
 		uint64_t getUint64(uint8_t data[], uint8_t offset, boolean reverseEndianess, uint8_t length);
 		uint8_t getString(uint8_t data[], char string[], uint8_t offset, uint8_t length = 255); // returns string length
+		uint8_t getArray(uint8_t data[], uint8_t array[], uint8_t offset, uint8_t length = 255); 
 		void clearData(uint8_t data[]); // Fast way to clear data if needed
 		
 		// You can get response and echo lengths from commands below
@@ -167,7 +168,7 @@ class DS2 {
 		boolean ackByteCheck = true;
 		
 		uint8_t isoTimeout = ISO_TIMEOUT;
-		uint32_t timeout = 1000UL*((uint32_t)isoTimeout);
+		uint32_t timeout = isoTimeout;
 		
 		volatile uint32_t timeStamp;
 		float commandsPerSecond;
@@ -175,4 +176,4 @@ class DS2 {
 		uint8_t writeToSerial(uint8_t data[], uint8_t length);
 };
 
-#endif
+#endif /* DS2_h */

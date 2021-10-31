@@ -30,6 +30,7 @@ boolean DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 	blocking = true;
 	writeData(command);
 	boolean result = readData(data);
+//	log_e("Data: %d2, %d2, %d2 ,%d2 ,%d2 ,%d2, %d2", data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
 	blocking = block;
 	if(!result) clearRX();
 	return (result && checkDataOk(data));
@@ -58,7 +59,7 @@ uint8_t DS2::receiveData(uint8_t data[]) {
 				return RECEIVE_BAD;
 			}
 			return RECEIVE_OK;
-		} else if((time = (micros() - timeStamp)) < timeout) {
+		} else if((time = (millis() - timeStamp)) < timeout) {
 			return RECEIVE_WAITING;
 		} else {
 			messageSend = false;
@@ -102,7 +103,7 @@ boolean DS2::copyCommand(uint8_t target[], uint8_t source[]) {
 
 
 uint8_t DS2::writeData(uint8_t data[], uint8_t length) {
-	timeStamp = micros();
+	timeStamp = millis();
 	if(!kwp) {
 		device = data[0];
 		echoLength = data[1];
@@ -127,13 +128,13 @@ uint8_t DS2::writeToSerial(uint8_t data[], uint8_t length) {
 
 boolean DS2::readCommand(uint8_t data[]) {
 	if(!kwp && (blocking || serial.available() > 1)) {
-			uint32_t startTime = micros();
+			uint32_t startTime = millis();
 			uint8_t checksum = serial.read();
 			data[0] = checksum;
 			echoLength = serial.read();
 			data[1] = echoLength;
 			checksum ^= echoLength;
-			while(echoLength-2 > serial.available()) if(micros() - startTime > timeout) break;
+			while(echoLength-2 > serial.available()) if(millis() - startTime > timeout) break;
 			for(uint8_t i = 2; i < echoLength; i++) {
 				data[i] = serial.read();
 				checksum ^= data[i];
@@ -144,14 +145,14 @@ boolean DS2::readCommand(uint8_t data[]) {
 			return true;
 	}
 	if(kwp && (blocking || serial.available() > 3)) {
-		uint32_t startTime = micros();
+		uint32_t startTime = millis();
 		uint8_t checksum = serial.read();
 		data[0] = checksum;
 		data[1] = serial.read();
 		data[2] = serial.read();
 		data[3] = serial.read();
 		echoLength = data[3] + 5;
-		while(echoLength-4 > serial.available()) if(micros() - startTime > timeout) break;
+		while(echoLength-4 > serial.available()) if(millis() - startTime > timeout) break;
 		for(uint8_t i = 1; i < echoLength; i++) {
 			if(i > 3) data[i] = serial.read();
 			checksum ^= data[i];
@@ -165,7 +166,7 @@ boolean DS2::readCommand(uint8_t data[]) {
 }
 
 boolean DS2::readData(uint8_t data[]) {
-	uint32_t startTime = micros();
+	uint32_t startTime = millis();
 	if(!blocking && echoLength != 0 && serial.available() == 0) return false;
 	if(!kwp && device != 0 && serial.available() > 0 && serial.peek() != device) {
 		serial.read();
@@ -177,10 +178,13 @@ boolean DS2::readData(uint8_t data[]) {
 		uint8_t echoOffset = kwp ? 4 : 2;
 		if(echoLength + echoOffset > responseLength) responseLength = echoLength + echoOffset;
 		data[echoLength + echoOffset] = 0xFF;
-		if(echoLength > 100) extraTimeout = 100000UL;
+		if(echoLength > 100) extraTimeout = 100UL;
 		
 		for(uint8_t i = 0; i < responseLength; i++) {
-			while(serial.available() == 0) if(micros() - startTime > timeout + extraTimeout) break;
+			while(serial.available() == 0) {
+				if(millis() - startTime > timeout + extraTimeout) break;
+				delay(1);
+			}
 			if(serial.available() == 0) break;
 			data[i] = serial.read();
 			// Check Echo
@@ -222,8 +226,8 @@ boolean DS2::checkData(uint8_t data[]) {
 			if(sameData) return false;
 		} */
 		
-		commandsPerSecond = 1000000.0/(micros() - timeStamp);
-		timeStamp = micros();
+		commandsPerSecond = 1000.0/(millis() - timeStamp);
+		timeStamp = millis();
 		return true;
 	} else return false;
 }
@@ -253,24 +257,24 @@ boolean DS2::getBlocking() {
 
 void DS2::setTimeout(uint8_t timeoutMs) {
 	isoTimeout = timeoutMs;
-	timeout = isoTimeout*1000.0;
+	timeout = isoTimeout;
 }
 
 void DS2::clearRX() {
-	uint32_t startTime = micros();
+	uint32_t startTime = millis();
 	while(serial.available() > 0) {
 		serial.read();
-		if(micros() - startTime > timeout) break;
+		if(millis() - startTime > timeout) break;
 	}
 }
 
 void DS2::clearRX(uint8_t available, uint8_t length) {
-	uint32_t startTime = micros();
+	uint32_t startTime = millis();
 	while(serial.available() > available) {
 		for(uint8_t i = 0; i < length; i++) {
 			serial.read();
 		}
-		if(micros() - startTime > timeout) break;
+		if(millis() - startTime > timeout) break;
 	}
 }
 
@@ -345,6 +349,15 @@ uint8_t DS2::getString(uint8_t data[], char string[], uint8_t offset, uint8_t le
 			charPos--;
 			break;
 		}
+	}
+	return charPos;
+}
+
+uint8_t DS2::getArray(uint8_t data[], uint8_t array[], uint8_t offset, uint8_t length) {
+	uint8_t charPos = 0;
+	uint8_t totalOffset = offset + echoLength + (kwp ? 4 : 3);
+	for(uint16_t i = totalOffset; i < length + totalOffset; i++) {
+		array[charPos++] = (char) data[i];
 	}
 	return charPos;
 }
