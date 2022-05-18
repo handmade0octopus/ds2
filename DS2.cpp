@@ -52,6 +52,7 @@ uint8_t DS2::sendCommand(uint8_t command[], uint8_t respLen) {
 
 uint8_t DS2::receiveData(uint8_t data[]) {
 	uint32_t time;
+//	log_e("Time: %d", millis() - timeStamp);
 	if(messageSend) {
 		if(readData(data)) {
 			messageSend = false;
@@ -118,7 +119,11 @@ uint8_t DS2::writeData(uint8_t data[], uint8_t length) {
 }
 
 uint8_t DS2::writeToSerial(uint8_t data[], uint8_t length) {
-	if(!slow) return serial.write(data, length);
+	if(!slow) {
+		length = serial.write(data, length);
+	//	serial.flush();
+		return length;
+	}
 	for(uint8_t i = 0; i < length; i++) {
 		delay(slowSend);
 		serial.write(data[i]);
@@ -167,12 +172,13 @@ boolean DS2::readCommand(uint8_t data[]) {
 
 boolean DS2::readData(uint8_t data[]) {
 	uint32_t startTime = millis();
-	if(!blocking && echoLength != 0 && serial.available() == 0) return false;
-	if(!kwp && device != 0 && serial.available() > 0 && serial.peek() != device) {
+	uint8_t availible = serial.available();
+	if(!blocking && echoLength != 0 && availible == 0) return false;
+	if(!kwp && device != 0 && availible > 0 && serial.peek() != device) {
 		serial.read();
 		return readData(data);
 	}
-	if(blocking || serial.available() > 2) {
+	if(blocking || availible > 2) {
 		data[0] = 0xFF;
 		uint32_t extraTimeout = 0;
 		uint8_t echoOffset = kwp ? 4 : 2;
@@ -181,11 +187,11 @@ boolean DS2::readData(uint8_t data[]) {
 		if(echoLength > 100) extraTimeout = 100UL;
 		
 		for(uint8_t i = 0; i < responseLength; i++) {
-			while(serial.available() == 0) {
+			while((availible = serial.available()) == 0) {
 				if(millis() - startTime > timeout + extraTimeout) break;
 				delay(1);
 			}
-			if(serial.available() == 0) break;
+			if(availible == 0) break;
 			data[i] = serial.read();
 			// Check Echo
 			if(i == echoOffset - 1) {
