@@ -88,9 +88,9 @@ void setup() {
 uint32_t startTime;
 float fps, lowestFps = 0, highestFps = 0;
 float hz, lowestHz = 0, highestHz = 0;
-boolean print = false;
+bool print = false;
 uint32_t canTimestamp = 0;
-boolean gotCan = false;
+bool gotCan = false;
 CAN_frame_t rx_frame;
 CAN_frame_t tx_frame;
 
@@ -114,7 +114,7 @@ void loop(void) {
 	
 	if(xQueueReceive(CAN_cfg.rx_queue,&rx_frame, 3*portTICK_PERIOD_MS)==pdTRUE){
 		gotCan = true;
-		boolean newCan = true;
+		bool newCan = true;
 		for(uint8_t i = 0; i < currentMaxCan && i < MAX_CAN_LIST; i++) {
 			if(canList[i][0] == rx_frame.MsgID) {
 				newCan = false;
@@ -169,7 +169,7 @@ void readSerial(Stream &ser) {
 			}	
 		}
 		
-		boolean newSender = true;
+		bool newSender = true;
 		for(uint8_t i = 0; i < maxCanSender && i < MAX_CAN_SEND; i++) {
 			if(canSender[i][1] == newCanSender[1]) {
 				newSender = false;

@@ -57,8 +57,8 @@ void setup() {
 // Loop variables
 uint32_t startTime;
 float fps, lowestFps = 0, highestFps = 0;
-boolean print = false;
-boolean received = false;
+bool print = false;
+bool received = false;
 
 void loop(void) {
 	startTime = micros();

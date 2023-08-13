@@ -44,9 +44,9 @@ uint16_t yArea = YMAX-TOP_FIXED_AREA-BOT_FIXED_AREA;
 uint16_t yDraw = YMAX - BOT_FIXED_AREA - TEXT_HEIGHT;
 
 
-boolean sdReady = false;
-boolean fileReady = false;
-boolean toggleLog = false;
+bool sdReady = false;
+bool fileReady = false;
+bool toggleLog = false;
 void setup() {
 	// Setup TFT
 	tft.begin();
@@ -125,7 +125,7 @@ String path = "/log01.csv";
 uint8_t fileNumber = 1;
 uint32_t lastcheck;
 File file;
-boolean handleSDCard() {
+bool handleSDCard() {
 	if(!sdReady) {
 		if(millis() < lastcheck + 1000L) return false;
 		lastcheck = millis();

@@ -18,18 +18,17 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #include <DS2.h>
 
 DS2::DS2(Stream &stream):serial(stream) {
-	serial = stream;
 }
 
 
-boolean DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
+bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 	responseLength = respLen;
 	clearData(data);
 	clearRX();
-	boolean block = blocking;
+	bool block = blocking;
 	blocking = true;
 	writeData(command);
-	boolean result = readData(data);
+	bool result = readData(data);
 //	log_e("Data: %d2, %d2, %d2 ,%d2 ,%d2 ,%d2, %d2", data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
 	blocking = block;
 	if(!result) clearRX();
@@ -50,7 +49,7 @@ uint8_t DS2::sendCommand(uint8_t command[], uint8_t respLen) {
 
 
 
-uint8_t DS2::receiveData(uint8_t data[]) {
+ReceiveType DS2::receiveData(uint8_t data[]) {
 	uint32_t time;
 //	log_e("Time: %d", millis() - timeStamp);
 	if(messageSend) {
@@ -76,8 +75,8 @@ void DS2::newCommand() {
 }
 
 
-boolean DS2::compareCommands(uint8_t compA[], uint8_t compB[]) {
-	boolean same = true;
+bool DS2::compareCommands(uint8_t compA[], uint8_t compB[]) {
+	bool same = true;
 	uint8_t length;
 	if(!kwp && compA[1] == compB[1]) length = compA[1];
 	else if(kwp && compA[3] == compB[3]) length = compA[3] + 5;
@@ -92,7 +91,7 @@ boolean DS2::compareCommands(uint8_t compA[], uint8_t compB[]) {
 	return same;
 }
 
-boolean DS2::copyCommand(uint8_t target[], uint8_t source[]) {
+bool DS2::copyCommand(uint8_t target[], uint8_t source[]) {
 	if(compareCommands(target, source)) return true;
 	uint8_t length = source[1];
 	if(kwp) length = source[3] + 5;
@@ -131,7 +130,7 @@ uint8_t DS2::writeToSerial(uint8_t data[], uint8_t length) {
 	return length;
 }
 
-boolean DS2::readCommand(uint8_t data[]) {
+bool DS2::readCommand(uint8_t data[]) {
 	if(!kwp && (blocking || serial.available() > 1)) {
 			uint32_t startTime = millis();
 			uint8_t checksum = serial.read();
@@ -157,7 +156,10 @@ boolean DS2::readCommand(uint8_t data[]) {
 		data[2] = serial.read();
 		data[3] = serial.read();
 		echoLength = data[3] + 5;
-		while(echoLength-4 > serial.available()) if(millis() - startTime > timeout) break;
+		while(echoLength-4 > serial.available()) {
+			if(millis() - startTime > timeout) break;
+			delay(1);
+		}
 		for(uint8_t i = 1; i < echoLength; i++) {
 			if(i > 3) data[i] = serial.read();
 			checksum ^= data[i];
@@ -170,28 +172,28 @@ boolean DS2::readCommand(uint8_t data[]) {
 	return false;
 }
 
-boolean DS2::readData(uint8_t data[]) {
+bool DS2::readData(uint8_t data[]) {
 	uint32_t startTime = millis();
-	uint8_t availible = serial.available();
-	if(!blocking && echoLength != 0 && availible == 0) return false;
-	if(!kwp && device != 0 && availible > 0 && serial.peek() != device) {
+	uint8_t available = serial.available();
+	if(!blocking && echoLength != 0 && available == 0) return false;
+	if(!kwp && device != 0 && available > 0 && serial.peek() != device) {
 		serial.read();
 		return readData(data);
 	}
-	if(blocking || availible > 2) {
+	if(blocking || available > 2) {
 		data[0] = 0xFF;
 		uint32_t extraTimeout = 0;
 		uint8_t echoOffset = kwp ? 4 : 2;
 		if(echoLength + echoOffset > responseLength) responseLength = echoLength + echoOffset;
 		data[echoLength + echoOffset] = 0xFF;
-		if(echoLength > 100) extraTimeout = 100UL;
+		if(echoLength > 50) extraTimeout = 200UL;
 		
 		for(uint8_t i = 0; i < responseLength; i++) {
-			while((availible = serial.available()) == 0) {
+			while((available = serial.available()) == 0) {
 				if(millis() - startTime > timeout + extraTimeout) break;
 				delay(1);
 			}
-			if(availible == 0) break;
+			if(available == 0) break;
 			data[i] = serial.read();
 			// Check Echo
 			if(i == echoOffset - 1) {
@@ -213,7 +215,7 @@ void DS2::clearData(uint8_t data[]) {
 }
 
 
-boolean DS2::checkData(uint8_t data[]) {
+bool DS2::checkData(uint8_t data[]) {
 	uint8_t echo = 0;
 	if(echoLength != 0) echo += (kwp ? data[3] + 5 : data[1]);
 	uint8_t checksum = data[echo];
@@ -225,7 +227,7 @@ boolean DS2::checkData(uint8_t data[]) {
 	if(checksum == 0) {
 		/*
 		if(echo != 0 && echo < maxDataLength/2 && data[echo+1] == echo) {
-			boolean sameData = true;
+			bool sameData = true;
 			for(uint8_t i = 0; i < echo; i++) {
 				if(data[i] != data[echo + i]) sameData = false;
 			}
@@ -238,7 +240,7 @@ boolean DS2::checkData(uint8_t data[]) {
 	} else return false;
 }
 
-boolean DS2::checkDataOk(uint8_t data[]) {
+bool DS2::checkDataOk(uint8_t data[]) {
 	if(kwp) {
 		if(data[echoLength + 2] == device) return true;
 		else return false;
@@ -247,17 +249,17 @@ boolean DS2::checkDataOk(uint8_t data[]) {
 	else return false;
 }
 
-void DS2::setAckByte(uint8_t ack, uint8_t offset, boolean check) {
+void DS2::setAckByte(uint8_t ack, uint8_t offset, bool check) {
 	ackByte = ack;
 	ackByteOffset = offset;
 	ackByteCheck = check;
 }
 
-void DS2::setBlocking(boolean mode) {
+void DS2::setBlocking(bool mode) {
 	blocking = mode;
 }
 
-boolean DS2::getBlocking() {
+bool DS2::getBlocking() {
 	return blocking;
 }
 
@@ -335,7 +337,7 @@ uint16_t DS2::getInt(uint8_t data[], uint8_t offset){
 	return result;
 }
 
-uint64_t DS2::getUint64(uint8_t data[], uint8_t offset, boolean reverseEndianess = false, uint8_t length = 8) {
+uint64_t DS2::getUint64(uint8_t data[], uint8_t offset, bool reverseEndianess = false, uint8_t length = 8) {
 	uint64_t result = 0;
 	uint8_t dataPoint = echoLength + offset + (kwp ? 4 : 3);
 	for(uint8_t i = 0; i < length && i < 8; i++) {

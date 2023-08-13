@@ -65,8 +65,8 @@ uint8_t matchEcu(char* id) {
 	return ecu.batteryOffset;
 }
 
-boolean compareString(char a[], char b[]) {
-	boolean match = true;
+bool compareString(char a[], char b[]) {
+	bool match = true;
 	for(uint8_t i = 0; i < 255; i++) {
 		if(a[i] == 0 || b[i] == 0) break;
 		if(a[i] != b[i]) {
@@ -148,7 +148,7 @@ void setup() {
 // Loop variables
 uint32_t startTime;
 float fps, lowestFps = 0, highestFps = 0;
-boolean print = false;
+bool print = false;
 float batteryVoltage;
 
 void loop(void) {
@@ -200,12 +200,12 @@ void printData(uint8_t command[]) {
 // Handling SD card event
 String path = "/log01.csv";
 uint8_t fileNumber = 1;
-boolean sdReady = false;
-boolean fileReady = false;
-boolean toggleLog = false;
+bool sdReady = false;
+bool fileReady = false;
+bool toggleLog = false;
 uint32_t lastcheck;
 File file;
-boolean handleSDCard() {
+bool handleSDCard() {
 	if(!sdReady) {
 		if(millis() < lastcheck + 1000L) return false;
 		lastcheck = millis();
