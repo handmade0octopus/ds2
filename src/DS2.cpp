@@ -17,8 +17,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #include <Arduino.h>
 #include <DS2.h>
 
-DS2::DS2(Stream &stream):serial(stream) {
-}
+
 
 
 bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
@@ -29,7 +28,6 @@ bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 	blocking = true;
 	writeData(command);
 	bool result = readData(data);
-//	log_e("Data: %d2, %d2, %d2 ,%d2 ,%d2 ,%d2, %d2", data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
 	blocking = block;
 	if(!result) clearRX();
 	return (result && checkDataOk(data));
@@ -51,7 +49,6 @@ uint8_t DS2::sendCommand(uint8_t command[], uint8_t respLen) {
 
 ReceiveType DS2::receiveData(uint8_t data[]) {
 	uint32_t time;
-//	log_e("Time: %d", millis() - timeStamp);
 	if(messageSend) {
 		if(readData(data)) {
 			messageSend = false;
@@ -118,7 +115,7 @@ uint8_t DS2::writeData(uint8_t data[], uint8_t length) {
 }
 
 uint8_t DS2::writeToSerial(uint8_t data[], uint8_t length) {
-	if(!slow) {
+	if(!slowSend) {
 		length = serial.write(data, length);
 	//	serial.flush();
 		return length;
@@ -215,9 +212,9 @@ void DS2::clearData(uint8_t data[]) {
 }
 
 
-bool DS2::checkData(uint8_t data[]) {
+bool DS2::checkData(uint8_t data[], bool fix) {
 	uint8_t echo = 0;
-	if(echoLength != 0) echo += (kwp ? data[3] + 5 : data[1]);
+	if(echoLength != 0 && !fix) echo += (kwp ? data[3] + 5 : data[1]);
 	uint8_t checksum = data[echo];
 	uint8_t checkLen = (kwp ? data[echo+3]+echo + 5 : data[echo+1]+echo);
 	for(uint8_t i = echo+1; i < checkLen; i++) {
@@ -225,19 +222,13 @@ bool DS2::checkData(uint8_t data[]) {
 	}
 
 	if(checksum == 0) {
-		/*
-		if(echo != 0 && echo < maxDataLength/2 && data[echo+1] == echo) {
-			bool sameData = true;
-			for(uint8_t i = 0; i < echo; i++) {
-				if(data[i] != data[echo + i]) sameData = false;
-			}
-			if(sameData) return false;
-		} */
-		
 		commandsPerSecond = 1000.0/(millis() - timeStamp);
 		timeStamp = millis();
 		return true;
-	} else return false;
+	} else {
+		if(fix) data[checkLen-1] = checksum;
+		return false;
+	}
 }
 
 bool DS2::checkDataOk(uint8_t data[]) {

@@ -78,7 +78,7 @@ enum ReceiveType : uint8_t {
 class DS2 {
 	public:
 		// Constructor, you can pass any Serial, SoftwareSerial or BluetoothSerial - anything that extends 'stream'
-		DS2(Stream &stream);
+		DS2(Stream &stream):serial(stream) {}
 		
 		// You san use library in blocking mode (default is false) and it waits ISO 112ms time for response.
 		void setBlocking(bool mode);
@@ -95,7 +95,8 @@ class DS2 {
 		uint8_t writeData(uint8_t data[], uint8_t length = 0); // sets device to first byte value; sets echo to second byte value
 		bool readCommand(uint8_t data[]); // sets echo to 0 so you can use readData and it will read data without echo after calling this command
 		bool readData(uint8_t data[]); // reads command and checks data
-		bool checkData(uint8_t data[]); // just use setEcho to 0 if want to check only response or command otherwise it will check whole data (echo + response) for checksum
+		// just use setEcho to 0 if want to check only response or command otherwise it will check whole data (echo + response) for checksum
+		bool checkData(uint8_t data[], bool fix = false); // fix = true allows you to fix checksum of the data you want to send
 		uint8_t available();
 		void flush();
 		
@@ -129,11 +130,8 @@ class DS2 {
 		bool getKwp() { return kwp; };
 		
 		// Some ECUs like DDE4 need delay between bytes sent
-		bool setSlowSend(bool setS, uint8_t delay = 3) { 
-			slowSend = delay;
-			return (slow = setS);
-		};
-		
+		void setSlowSend(uint8_t delay = 0) { slowSend = delay; };
+		uint8_t getSlowSend() { return slowSend; }
 		
 		// Get commands per second calculated from write command followed by readData
 		float getRespondsPerSecond();
@@ -142,14 +140,13 @@ class DS2 {
 		void clearRX();
 		void clearRX(uint8_t available, uint8_t length);
 	
-		Stream &serial;
 	private:
+		Stream &serial;
 		bool kwp = false;
-		bool slow = false;
 		bool blocking = false;
 		bool messageSend = false;
 		
-		uint8_t slowSend = 4;
+		uint8_t slowSend = 0;
 		uint8_t device = 0;
 		uint8_t echoLength = 0, responseLength, maxDataLength = MAX_DATA_LENGTH;
 		
