@@ -57,7 +57,7 @@ v1.0: INITIAL RELEASE
 **/
 // Default timeout for message
 #ifndef ISO_TIMEOUT
-#define ISO_TIMEOUT 140
+#define ISO_TIMEOUT 255
 #endif
 
 // Default max data length
@@ -83,7 +83,7 @@ class DS2 {
 		// You san use library in blocking mode (default is false) and it waits ISO 112ms time for response.
 		void setBlocking(bool mode);
 		bool getBlocking();
-		void setTimeout(uint8_t timeoutMs);
+		void setTimeout(uint32_t timeoutMs);
 		void setAckByte(uint8_t ack, uint8_t offset, bool check); // sets ack byte and whether we should perform datacheck
 		void setMaxDataLength(uint8_t dataLength); // Useful for saving space if you know you don't want to have longer messages
 		
@@ -154,8 +154,7 @@ class DS2 {
 		uint8_t ackByte = 0xA0;
 		bool ackByteCheck = true;
 		
-		uint8_t isoTimeout = ISO_TIMEOUT;
-		uint32_t timeout = isoTimeout;
+		uint32_t timeout = ISO_TIMEOUT;
 		
 		volatile uint32_t timeStamp;
 		float commandsPerSecond;

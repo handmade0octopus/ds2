@@ -153,7 +153,7 @@ bool DS2::readCommand(uint8_t data[]) {
 		data[2] = serial.read();
 		data[3] = serial.read();
 		echoLength = data[3] + 5;
-		while(echoLength-4 > serial.available()) {
+		while(serial.available() < echoLength-4) {
 			if(millis() - startTime > timeout) break;
 			delay(1);
 		}
@@ -174,10 +174,17 @@ bool DS2::readData(uint8_t data[]) {
 	uint8_t available = serial.available();
 	if(!blocking && echoLength != 0 && available == 0) return false;
 	if(!kwp && device != 0 && available > 0 && serial.peek() != device) {
-		serial.read();
-		return readData(data);
+		do {
+			serial.read();
+			if(millis() - startTime > timeout) return false;
+		} while(serial.peek() != device);
+		available = serial.available();
 	}
 	if(blocking || available > 2) {
+		while((available = serial.available()) <= 2) {
+			if(millis() - startTime > timeout) break;
+			delay(1);
+		}
 		data[0] = 0xFF;
 		uint32_t extraTimeout = 0;
 		uint8_t echoOffset = kwp ? 4 : 2;
@@ -254,9 +261,8 @@ bool DS2::getBlocking() {
 	return blocking;
 }
 
-void DS2::setTimeout(uint8_t timeoutMs) {
-	isoTimeout = timeoutMs;
-	timeout = isoTimeout;
+void DS2::setTimeout(uint32_t timeoutMs) {
+	timeout = timeoutMs;
 }
 
 void DS2::clearRX() {
