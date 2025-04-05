@@ -23,7 +23,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 	responseLength = respLen;
 	clearData(data);
-	clearRX();
+	newCommand();
 	bool block = blocking;
 	blocking = true;
 	writeData(command);
@@ -35,11 +35,11 @@ bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 
 
 uint8_t DS2::sendCommand(uint8_t command[], uint8_t respLen) {
-	if(messageSend) {
+	if(messageSent) {
 		return 0;
 	} else {
 		if(respLen != 0) responseLength = respLen;
-		messageSend = true;
+		messageSent = true;
 		clearRX();
 		return writeData(command);
 	}
@@ -49,9 +49,9 @@ uint8_t DS2::sendCommand(uint8_t command[], uint8_t respLen) {
 
 ReceiveType DS2::receiveData(uint8_t data[]) {
 	uint32_t time;
-	if(messageSend) {
+	if(messageSent) {
 		if(readData(data)) {
-			messageSend = false;
+			messageSent = false;
 			if(!checkDataOk(data) || echoLength == responseLength) {
 				return RECEIVE_BAD;
 			}
@@ -59,7 +59,7 @@ ReceiveType DS2::receiveData(uint8_t data[]) {
 		} else if((time = (millis() - timeStamp)) < timeout) {
 			return RECEIVE_WAITING;
 		} else {
-			messageSend = false;
+			messageSent = false;
 //			return time;
 			return RECEIVE_TIMEOUT;
 		}
@@ -68,7 +68,7 @@ ReceiveType DS2::receiveData(uint8_t data[]) {
 
 void DS2::newCommand() {
 	clearRX();
-	messageSend = false;
+	messageSent = false;
 }
 
 
@@ -268,7 +268,7 @@ void DS2::setTimeout(uint32_t timeoutMs) {
 void DS2::clearRX() {
 	uint32_t startTime = millis();
 	while(serial.available() > 0) {
-		serial.read();
+		(void) serial.read();
 		if(millis() - startTime > timeout) break;
 	}
 }

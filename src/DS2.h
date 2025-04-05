@@ -128,6 +128,7 @@ class DS2 {
 		// KWP protocol handling
 		bool setKwp(bool kwpSet) { return (kwp = kwpSet); };
 		bool getKwp() { return kwp; };
+		bool messageStatus() { return messageSent; };
 		
 		// Some ECUs like DDE4 need delay between bytes sent
 		void setSlowSend(uint8_t delay = 0) { slowSend = delay; };
@@ -144,7 +145,7 @@ class DS2 {
 		Stream &serial;
 		bool kwp = false;
 		bool blocking = false;
-		bool messageSend = false;
+		bool messageSent = false;
 		
 		uint8_t slowSend = 0;
 		uint8_t device = 0;
