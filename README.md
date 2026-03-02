@@ -2,7 +2,7 @@
 *	Made to simplyfy the communication between arduino code and ECUs using DS2 k-line protocol ISO 9141.
 	It was made and tested for L9637D but any interface should work the same way. 
 
-*	Look at [example](example/BasicExample/BasicExample.ino) and drop ['libraries'](example/BasicExample/) folder into your library location.
+*	Look at [example](examples/BasicExample/BasicExample.ino) and drop ['libraries'](examples/BasicExample/) folder into your library location.
 
 *	More info about the project on [RomRaider Forum](https://www.romraider.com/forum/viewtopic.php?f=58&t=17030) <==
 *	and [MS4X.net wiki](https://www.ms4x.net/index.php?title=Logger.S) <==
