@@ -30,7 +30,9 @@ bool DS2::obtainValues(uint8_t command[], uint8_t data[], uint8_t respLen) {
 	bool result = readData(data);
 	blocking = block;
 	if(!result) clearRX();
-	return (result && checkDataOk(data));
+	bool ok = result && checkDataOk(data);
+	if(!ok) newCommand();
+	return ok;
 }
 
 
